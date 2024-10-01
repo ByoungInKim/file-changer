@@ -12,6 +12,20 @@ import { mainConfig } from './webpack.main.config';
 import { rendererConfig } from './webpack.renderer.config';
 
 const config: ForgeConfig = {
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'ByoungInKim',
+          name: 'file-changer'
+        },
+        authToken: process.env.GITHUB_TOKEN,
+        prerelease: false,
+        draft: false
+      }
+    }
+  ],
   packagerConfig: {
     asar: true,
   },
@@ -25,7 +39,7 @@ const config: ForgeConfig = {
         config: rendererConfig,
         entryPoints: [
           {
-            html: './src/index.html',
+            html: './src/app/index.html',
             js: './src/renderer.ts',
             name: 'main_window',
             preload: {
