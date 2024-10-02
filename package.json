@@ -1,7 +1,7 @@
 {
   "name": "file-changer",
   "productName": "file-changer",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "My Electron application description",
   "main": ".webpack/main",
   "scripts": {
@@ -56,5 +56,14 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "update-electron-app": "^3.0.0"
-  }
+  },
+  "build": {
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ByoungInKim",
+        "repo": "file-changer"
+      }
+    ]
+}
 }
