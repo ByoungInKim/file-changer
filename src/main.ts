@@ -20,7 +20,7 @@ updateElectronApp({
     repo: 'ByoungInKim/file-changer',
     host: 'https://update.electronjs.org'
   },
-  updateInterval: '1 hour'
+  updateInterval: '5 minutes'
 })
 
 const createWindow = (): void => {
