@@ -44,6 +44,7 @@ export default function App() {
             {/* Sidebar content here */}
             <li><a>앞에 추가</a></li>
             <li><a>뒤에 추가</a></li>
+            <li><a>v3</a></li>
             </ul>
          </div>
       </div>
