@@ -6,9 +6,9 @@ import { TableFileInfo } from "./types/tableFileInfo";
 import FileListView from "./FileListView"
 
 // Todo.
-// modal 에서 입력한것으로 tableInfo - destName, destPath 를 변경한다.
-// apply 에서 syncTableFileInfoList를 loop 하면서 파일 이름 바꾼다.
-
+// 변경 기능 하나씩 추가 하기
+// 테이블, 이름, 변경이름 좀더 넓게 쓰고 싶다.
+// destName, destPath 에서 바뀐부분의 컬러를 변경하고 싶어 
 declare global {
   interface Window {
     electron: {
@@ -28,18 +28,20 @@ export default function App() {
 
   const modalRef = useRef<HTMLDialogElement>(null);
   const [modalContent, setModalContent] = useState<CMD | null>(null);
+  const [inputT1, setInputT1] = useState<string>('');
+  const [inputT2, setInputT2] = useState<string>('');
 
   useEffect(() => {
     window.electron.onFileOpened((filePaths: string[]) => {
       const newDetails = filePaths.map(filePath => ({
         name: filePath.replace(/^.*[\\/]/, ''),
-        path: filePath,
+        path: filePath.slice(0, filePath.length - filePath.replace(/^.*[\\/]/, '').length),
         size: 0, // 필요한 경우 파일 크기를 추가로 가져올 수 있습니다.
         lastModified: 0, // 필요한 경우 마지막 수정 시간을 추가로 가져올 수 있습니다.
       }));
 
       const uniqueDetails = newDetails.filter(newFile => 
-        !syncTableFileInfoList.some(existingFile => existingFile.srcPath === newFile.path)
+        !syncTableFileInfoList.some(existingFile => existingFile.srcPath === newFile.path && existingFile.srcName === newFile.name)
       );
 
       const tableFileInfos: TableFileInfo[] = uniqueDetails.map(file => ({
@@ -60,19 +62,40 @@ export default function App() {
       }
     });
 
+  }, []);
+
+  useEffect(() => {
     window.electron.onApply(() => {
-      console.log("do apply")
-      window.electron.renameFile(
-        "C:\\Users\\keni\\workspace\\github\\file-changer\\test.txt",
-        "C:\\Users\\keni\\workspace\\github\\file-changer\\test2.txt"
-      ).then(result => {
-        console.log(result);
-      }).catch(error => {
-        console.error('파일 이름 변경 실패:', error);
+      tableFileInfoList.forEach(file => {
+        const srcFullPath = `${file.srcPath}${file.srcName}`;
+        const destFullPath = `${file.destPath}${file.destName}`;
+    
+        window.electron.renameFile(srcFullPath, destFullPath)
+          .then(result => {
+            console.log(`파일 이름 변경 성공: ${srcFullPath} -> ${destFullPath}`);
+          })
+          .catch(error => {
+            console.error(`파일 이름 변경 실패: ${srcFullPath} -> ${destFullPath}`, error);
+          });
       });
     });
+  }, [tableFileInfoList]);
 
-  }, []);
+  const handleConfirm = (cmd: CMD, t1: string, t2: string) => {
+    syncTableFileInfoList = tableFileInfoList.map((file: TableFileInfo) => {
+      const destName = t1 + file.srcName;
+  
+      return {
+        srcName: file.srcName,
+        destName: destName,
+        srcPath: file.srcPath,
+        destPath: file.destPath,
+      };
+    });
+
+    setTableFileInfoList(syncTableFileInfoList);
+    (document.getElementById('my_modal_2') as any)?.close();
+  };
 
   return (
     <div className="flex">
@@ -85,14 +108,26 @@ export default function App() {
             <h3 className="font-bold text-lg">{modalContent.cmd}</h3>
             <h2 className="py-4">{modalContent.sub_cmd}</h2>
             <p className="py-2">{modalContent.t1}</p>
-            <input type="text" placeholder={modalContent.t1} className="input input-bordered w-full max-w-xs" />
+             <input
+              type="text"
+              placeholder={modalContent.t1}
+              className="input input-bordered w-full max-w-xs"
+              value={inputT1}
+              onChange={(e) => setInputT1(e.target.value)}
+            />
             <p className="py-2">{modalContent.t2}</p>
-            <input type="text" placeholder={modalContent.t2} className="input input-bordered w-full max-w-xs" />
+            <input
+              type="text"
+              placeholder={modalContent.t2}
+              className="input input-bordered w-full max-w-xs"
+              value={inputT2}
+              onChange={(e) => setInputT2(e.target.value)}
+            />
             </>
           )}
         <div className="flex justify-end mt-4">
-          <button className="btn mr-2">확인</button>
-          <button className="btn" onClick={() => (modalRef.current as any).close()}>취소</button>
+        <button className="btn mr-2" onClick={() => handleConfirm(modalContent, inputT1, inputT2)}>확인</button>
+        <button className="btn" onClick={() => (modalRef.current as any).close()}>취소</button>
         </div>
         </div>
         <form method="dialog" className="modal-backdrop">
