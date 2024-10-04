@@ -1,16 +1,11 @@
 import React from 'react';
-import { FileInfo } from './types/fileInfo';
-
-// Todo.
-// 빈값일떄 처리 
-// row 전체다 같이 클릭가능하게 변경
-// 테마 밝은걸로 변경
+import { TableFileInfo } from './types/tableFileInfo';
 
 interface FileListViewProps {
-  fileInfoList: FileInfo[];
+  tableFileInfoList: TableFileInfo[];
 }
 
-const FileListView: React.FC<FileListViewProps> = ({ fileInfoList }) => {
+const FileListView: React.FC<FileListViewProps> = ({ tableFileInfoList }) => {
     return (
         <div className="overflow-x-auto">
         <table className="table table-xs">
@@ -24,13 +19,13 @@ const FileListView: React.FC<FileListViewProps> = ({ fileInfoList }) => {
             </tr>
             </thead>
             <tbody>
-            {fileInfoList.map((file, index) => (
+            {tableFileInfoList.map((file, index) => (
             <tr key={index}>
               <th>{index + 1}</th>
-              <td>{file.name}</td>
-              <td>{file.name}</td> 
-              <td>{file.path}</td>
-              <td>{file.path}</td>
+              <td>{file.srcName}</td>
+              <td>{file.destName}</td> 
+              <td>{file.srcPath}</td>
+              <td>{file.destPath}</td>
             </tr>
           ))}
             </tbody>

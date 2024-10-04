@@ -1,20 +1,34 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { createRoot } from 'react-dom/client';
 import { FileInfo } from "./types/fileInfo";
+import { CMD } from "./types/command";
+import { TableFileInfo } from "./types/tableFileInfo";
 import FileListView from "./FileListView"
+
+// Todo.
+// modal 에서 입력한것으로 tableInfo - destName, destPath 를 변경한다.
+// apply 에서 syncTableFileInfoList를 loop 하면서 파일 이름 바꾼다.
 
 declare global {
   interface Window {
     electron: {
+      renameFile: (oldName: string, newName: string) => Promise<string>;
+
       onFileOpened: (callback: (filePaths: string[]) => void) => void;
+      onModalOpen: (callback: (command: CMD) => void) => void;
+      onApply: (callback: () => void) => void;
     }
   }
 }
 
 export default function App() {
-  let orgFileInfoList: FileInfo[] = [];
-  const [fileInfoList, setFileInfoList] = useState<FileInfo[]>([]);
-  
+  let syncTableFileInfoList: TableFileInfo[] = [];
+
+  const [tableFileInfoList, setTableFileInfoList] = useState<TableFileInfo[]>([]);
+
+  const modalRef = useRef<HTMLDialogElement>(null);
+  const [modalContent, setModalContent] = useState<CMD | null>(null);
+
   useEffect(() => {
     window.electron.onFileOpened((filePaths: string[]) => {
       const newDetails = filePaths.map(filePath => ({
@@ -25,32 +39,67 @@ export default function App() {
       }));
 
       const uniqueDetails = newDetails.filter(newFile => 
-        !orgFileInfoList.some(existingFile => existingFile.path === newFile.path)
+        !syncTableFileInfoList.some(existingFile => existingFile.srcPath === newFile.path)
       );
 
-      orgFileInfoList = orgFileInfoList.concat(uniqueDetails)
-      setFileInfoList(orgFileInfoList);
+      const tableFileInfos: TableFileInfo[] = uniqueDetails.map(file => ({
+        srcName: file.name,
+        destName: file.name,
+        srcPath: file.path,
+        destPath: file.path,
+      }));
+
+      syncTableFileInfoList = syncTableFileInfoList.concat(tableFileInfos)
+      setTableFileInfoList(syncTableFileInfoList)
     });
+
+    window.electron.onModalOpen((command: CMD) => {
+      setModalContent(command)
+      if (modalRef.current) {
+        (modalRef.current as any).showModal();
+      }
+    });
+
+    window.electron.onApply(() => {
+      console.log("do apply")
+      window.electron.renameFile(
+        "C:\\Users\\keni\\workspace\\github\\file-changer\\test.txt",
+        "C:\\Users\\keni\\workspace\\github\\file-changer\\test2.txt"
+      ).then(result => {
+        console.log(result);
+      }).catch(error => {
+        console.error('파일 이름 변경 실패:', error);
+      });
+    });
+
   }, []);
 
   return (
     <div className="flex">
-      {/* Sidebar*/}
-      <div className="drawer drawer-open w-40">
-        <input id="my-drawer" type="checkbox" className="drawer-toggle" />
-        <div className="drawer-side">
-            <label htmlFor="my-drawer" className="drawer-overlay"></label>
-            <ul className="menu bg-base-200 text-base-content min-h-full w-40 p-4">
-            {/* Sidebar content here */}
-            <li><a>앞에 추가</a></li>
-            <li><a>뒤에 추가</a></li>
-            <li><a>v3</a></li>
-            </ul>
-         </div>
+      <FileListView tableFileInfoList={tableFileInfoList} />
+     {/* Open the modal using document.getElementById('ID').showModal() method */}
+      <dialog id="my_modal_2" className="modal" ref={modalRef}>
+        <div className="modal-box">
+          {modalContent && (
+            <>
+            <h3 className="font-bold text-lg">{modalContent.cmd}</h3>
+            <h2 className="py-4">{modalContent.sub_cmd}</h2>
+            <p className="py-2">{modalContent.t1}</p>
+            <input type="text" placeholder={modalContent.t1} className="input input-bordered w-full max-w-xs" />
+            <p className="py-2">{modalContent.t2}</p>
+            <input type="text" placeholder={modalContent.t2} className="input input-bordered w-full max-w-xs" />
+            </>
+          )}
+        <div className="flex justify-end mt-4">
+          <button className="btn mr-2">확인</button>
+          <button className="btn" onClick={() => (modalRef.current as any).close()}>취소</button>
+        </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
       </div>
-      {/* Sidebar*/}
-     <FileListView fileInfoList={fileInfoList} />
-    </div>
   );
 }
 
