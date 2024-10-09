@@ -4,6 +4,7 @@ import { FileInfo } from "./types/fileInfo";
 import { CMD } from "./types/command";
 import { TableFileInfo } from "./types/tableFileInfo";
 import FileListView from "./FileListView"
+import { transfomer } from "./transfomer/transfomer";
 
 // Todo.
 // 변경 기능 하나씩 추가 하기
@@ -16,6 +17,7 @@ declare global {
 
       onFileOpened: (callback: (filePaths: string[]) => void) => void;
       onModalOpen: (callback: (command: CMD) => void) => void;
+      onDeleteAll: (callback: (command: CMD) => void) => void;
       onApply: (callback: () => void) => void;
     }
   }
@@ -62,14 +64,15 @@ export default function App() {
       }
     });
 
+
   }, []);
 
   useEffect(() => {
     window.electron.onApply(() => {
-      tableFileInfoList.forEach(file => {
+      const updatedList = tableFileInfoList.map(file => {
         const srcFullPath = `${file.srcPath}${file.srcName}`;
         const destFullPath = `${file.destPath}${file.destName}`;
-    
+  
         window.electron.renameFile(srcFullPath, destFullPath)
           .then(result => {
             console.log(`파일 이름 변경 성공: ${srcFullPath} -> ${destFullPath}`);
@@ -77,54 +80,80 @@ export default function App() {
           .catch(error => {
             console.error(`파일 이름 변경 실패: ${srcFullPath} -> ${destFullPath}`, error);
           });
+  
+        return { ...file, srcName: file.destName };
       });
+  
+      // 상태 업데이트
+      setTableFileInfoList(updatedList);
     });
+
+    window.electron.onDeleteAll((command: CMD) => {
+      handleConfirm(command, "", "")
+    });
+
   }, [tableFileInfoList]);
 
   const handleConfirm = (cmd: CMD, t1: string, t2: string) => {
-    syncTableFileInfoList = tableFileInfoList.map((file: TableFileInfo) => {
-      const destName = t1 + file.srcName;
-  
-      return {
-        srcName: file.srcName,
-        destName: destName,
-        srcPath: file.srcPath,
-        destPath: file.destPath,
-      };
+    syncTableFileInfoList = tableFileInfoList.map((file: TableFileInfo, index: number) => {
+      return transfomer(file, cmd, t1, t2, index);
     });
 
     setTableFileInfoList(syncTableFileInfoList);
     (document.getElementById('my_modal_2') as any)?.close();
   };
 
+  
+  const moveRowUp = (index: number) => {
+    if (index === 0) return; // 첫 번째 행은 위로 이동할 수 없음
+    const updatedList = [...tableFileInfoList];
+    [updatedList[index - 1], updatedList[index]] = [updatedList[index], updatedList[index - 1]];
+    setTableFileInfoList(updatedList);
+  };
+
+  const moveRowDown = (index: number) => {
+    if (index === tableFileInfoList.length - 1) return; // 마지막 행은 아래로 이동할 수 없음
+    const updatedList = [...tableFileInfoList];
+    [updatedList[index + 1], updatedList[index]] = [updatedList[index], updatedList[index + 1]];
+    setTableFileInfoList(updatedList);
+  };
+
   return (
     <div className="flex">
-      <FileListView tableFileInfoList={tableFileInfoList} />
+      <FileListView 
+        tableFileInfoList={tableFileInfoList}
+        moveRowUp={moveRowUp}
+        moveRowDown={moveRowDown} 
+      />
      {/* Open the modal using document.getElementById('ID').showModal() method */}
       <dialog id="my_modal_2" className="modal" ref={modalRef}>
         <div className="modal-box">
-          {modalContent && (
-            <>
+        {modalContent && (
+          <>
             <h3 className="font-bold text-lg">{modalContent.cmd}</h3>
             <h2 className="py-4">{modalContent.sub_cmd}</h2>
             <p className="py-2">{modalContent.t1}</p>
-             <input
+            <input
               type="text"
               placeholder={modalContent.t1}
               className="input input-bordered w-full max-w-xs"
               value={inputT1}
               onChange={(e) => setInputT1(e.target.value)}
             />
-            <p className="py-2">{modalContent.t2}</p>
-            <input
-              type="text"
-              placeholder={modalContent.t2}
-              className="input input-bordered w-full max-w-xs"
-              value={inputT2}
-              onChange={(e) => setInputT2(e.target.value)}
-            />
-            </>
-          )}
+            {modalContent.t2.length >= 2 && (
+              <>
+                <p className="py-2">{modalContent.t2}</p>
+                <input
+                  type="text"
+                  placeholder={modalContent.t2}
+                  className="input input-bordered w-full max-w-xs"
+                  value={inputT2}
+                  onChange={(e) => setInputT2(e.target.value)}
+                />
+              </>
+            )}
+          </>
+        )}
         <div className="flex justify-end mt-4">
         <button className="btn mr-2" onClick={() => handleConfirm(modalContent, inputT1, inputT2)}>확인</button>
         <button className="btn" onClick={() => (modalRef.current as any).close()}>취소</button>

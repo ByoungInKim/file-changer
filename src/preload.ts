@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electron', {
 
     onFileOpened: (callback: (filePaths: string[]) => void) => ipcRenderer.on('file-opened', (event, filePaths) => callback(filePaths)),
     onModalOpen: (callback: (command: CMD) => void) => ipcRenderer.on('modal-open', (event, command) => callback(command)),
+    onDeleteAll: (callback: (command: CMD) => void) => ipcRenderer.on('delete-all', (event, command) => callback(command)),
     onApply: (callback: () => void) => ipcRenderer.on('apply', (event) => callback()),
 
 });
