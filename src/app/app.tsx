@@ -16,6 +16,7 @@ declare global {
       renameFile: (oldName: string, newName: string) => Promise<string>;
 
       onFileOpened: (callback: (filePaths: string[]) => void) => void;
+      onFileClear: (callback: () => void) => void;
       onModalOpen: (callback: (command: CMD) => void) => void;
       onDeleteAll: (callback: (command: CMD) => void) => void;
       onApply: (callback: () => void) => void;
@@ -34,6 +35,17 @@ export default function App() {
   const [inputT2, setInputT2] = useState<string>('');
 
   useEffect(() => {
+    window.electron.onModalOpen((command: CMD) => {
+      setModalContent(command)
+      if (modalRef.current) {
+        (modalRef.current as any).showModal();
+      }
+    });
+
+
+  }, []);
+
+  useEffect(() => {
     window.electron.onFileOpened((filePaths: string[]) => {
       const newDetails = filePaths.map(filePath => ({
         name: filePath.replace(/^.*[\\/]/, ''),
@@ -46,7 +58,8 @@ export default function App() {
         !syncTableFileInfoList.some(existingFile => existingFile.srcPath === newFile.path && existingFile.srcName === newFile.name)
       );
 
-      const tableFileInfos: TableFileInfo[] = uniqueDetails.map(file => ({
+      const tableFileInfos: TableFileInfo[] = uniqueDetails.map((file, index) => ({
+        id: index,
         srcName: file.name,
         destName: file.name,
         srcPath: file.path,
@@ -57,17 +70,6 @@ export default function App() {
       setTableFileInfoList(syncTableFileInfoList)
     });
 
-    window.electron.onModalOpen((command: CMD) => {
-      setModalContent(command)
-      if (modalRef.current) {
-        (modalRef.current as any).showModal();
-      }
-    });
-
-
-  }, []);
-
-  useEffect(() => {
     window.electron.onApply(() => {
       const updatedList = tableFileInfoList.map(file => {
         const srcFullPath = `${file.srcPath}${file.srcName}`;
@@ -92,6 +94,10 @@ export default function App() {
       handleConfirm(command, "", "")
     });
 
+    window.electron.onFileClear(() => {
+      setTableFileInfoList([])
+    });
+
   }, [tableFileInfoList]);
 
   const handleConfirm = (cmd: CMD, t1: string, t2: string) => {
@@ -100,30 +106,31 @@ export default function App() {
     });
 
     setTableFileInfoList(syncTableFileInfoList);
+    setInputT1('');
     (document.getElementById('my_modal_2') as any)?.close();
   };
 
   
-  const moveRowUp = (index: number) => {
-    if (index === 0) return; // 첫 번째 행은 위로 이동할 수 없음
-    const updatedList = [...tableFileInfoList];
-    [updatedList[index - 1], updatedList[index]] = [updatedList[index], updatedList[index - 1]];
-    setTableFileInfoList(updatedList);
+  const onDragEnd = (result: any) => {
+    if (!result.destination) return;
+    const newItems = Array.from(tableFileInfoList);
+    const [movedItem] = newItems.splice(result.source.index, 1);
+    newItems.splice(result.destination.index, 0, movedItem);
+    setTableFileInfoList(newItems);
   };
 
-  const moveRowDown = (index: number) => {
-    if (index === tableFileInfoList.length - 1) return; // 마지막 행은 아래로 이동할 수 없음
-    const updatedList = [...tableFileInfoList];
-    [updatedList[index + 1], updatedList[index]] = [updatedList[index], updatedList[index + 1]];
-    setTableFileInfoList(updatedList);
+  const removeRow = (index: number) => {
+    const newItems = Array.from(tableFileInfoList);
+    newItems.splice(index, 1);
+    setTableFileInfoList(newItems);
   };
 
   return (
     <div className="flex">
       <FileListView 
         tableFileInfoList={tableFileInfoList}
-        moveRowUp={moveRowUp}
-        moveRowDown={moveRowDown} 
+        onDragEnd={onDragEnd}
+        removeRow={removeRow}
       />
      {/* Open the modal using document.getElementById('ID').showModal() method */}
       <dialog id="my_modal_2" className="modal" ref={modalRef}>
@@ -156,7 +163,10 @@ export default function App() {
         )}
         <div className="flex justify-end mt-4">
         <button className="btn mr-2" onClick={() => handleConfirm(modalContent, inputT1, inputT2)}>확인</button>
-        <button className="btn" onClick={() => (modalRef.current as any).close()}>취소</button>
+        <button className="btn"  onClick={() => {
+          (modalRef.current as any).close();
+          setInputT1('');
+        }}>취소</button>
         </div>
         </div>
         <form method="dialog" className="modal-backdrop">

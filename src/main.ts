@@ -57,6 +57,14 @@ const createWindow = (): void => {
           },
         },
         {
+          label: '파일 비우기',
+          click: async () => {
+            if (mainWindow) {
+              mainWindow.webContents.send('file-clear');
+            }
+          }
+        },
+        {
           label: '적용하기',
           click: async () => {
             if (mainWindow) {

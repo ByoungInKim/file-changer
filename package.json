@@ -1,7 +1,7 @@
 {
   "name": "file-changer",
   "productName": "file-changer",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "파일 이름을 쉽게 변경해줍니다.",
   "main": ".webpack/main",
   "scripts": {
@@ -23,6 +23,7 @@
     "@electron-forge/publisher-github": "^7.5.0",
     "@electron/fuses": "^1.8.0",
     "@types/react": "^18.3.11",
+    "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
@@ -54,6 +55,7 @@
     "postcss": "^8.4.47",
     "postcss-loader": "^8.1.1",
     "react": "^18.3.1",
+    "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.3.1",
     "update-electron-app": "^3.0.0"
   },
