@@ -1,7 +1,7 @@
 {
   "name": "file-changer",
   "productName": "file-changer",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "파일 이름을 쉽게 변경해줍니다.",
   "main": ".webpack/main",
   "scripts": {

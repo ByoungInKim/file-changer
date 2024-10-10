@@ -55,7 +55,7 @@ export default function App() {
       }));
 
       const uniqueDetails = newDetails.filter(newFile => 
-        !syncTableFileInfoList.some(existingFile => existingFile.srcPath === newFile.path && existingFile.srcName === newFile.name)
+        !tableFileInfoList.some(existingFile => existingFile.srcPath === newFile.path && existingFile.srcName === newFile.name)
       );
 
       const tableFileInfos: TableFileInfo[] = uniqueDetails.map((file, index) => ({
@@ -66,7 +66,14 @@ export default function App() {
         destPath: file.path,
       }));
 
-      syncTableFileInfoList = syncTableFileInfoList.concat(tableFileInfos)
+      syncTableFileInfoList = tableFileInfoList.concat(tableFileInfos)
+      syncTableFileInfoList = syncTableFileInfoList.map((file, index) => ({
+        id: index,
+        srcName: file.srcName,
+        destName: file.destName,
+        srcPath: file.srcPath,
+        destPath: file.destPath,
+      }));
       setTableFileInfoList(syncTableFileInfoList)
     });
 
@@ -109,7 +116,6 @@ export default function App() {
     setInputT1('');
     (document.getElementById('my_modal_2') as any)?.close();
   };
-
   
   const onDragEnd = (result: any) => {
     if (!result.destination) return;
